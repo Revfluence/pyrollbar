@@ -10,6 +10,7 @@ import inspect
 import json
 import logging
 import os
+import re
 import socket
 import sys
 import threading
@@ -220,6 +221,7 @@ SETTINGS = {
     'environment': 'production',
     'exception_level_filters': [],
     'root': None,  # root path to your code
+    'filename_regex_sub': [],  # list of tuples of (regex pattern, replacement)
     'branch': None,  # git branch name
     'code_version': None,
     'handler': 'thread',  # 'blocking', 'thread', 'agent', 'tornado', 'gae' or 'twisted'
@@ -710,6 +712,11 @@ def _trace_data(cls, exc, trace):
     # most recent call last
     raw_frames = traceback.extract_tb(trace)
     frames = [{'filename': f[0], 'lineno': f[1], 'method': f[2], 'code': f[3]} for f in raw_frames]
+    if SETTINGS.get('filename_regex_sub'):
+        for frame in frames:
+            for pattern, replacement in SETTINGS['filename_regex_sub']:
+                filename = re.sub(pattern, replacement, frame['filename'])
+                frame['filename'] = filename
 
     trace_data = {
         'frames': frames,
